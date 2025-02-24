@@ -91,7 +91,12 @@ class GraphIntegrator:
                 if prop == "embeddings":
                     value = GraphIntegrator.transform_embeddings_to_str_list(value)
                 properties.append(f'SET n.{prop.replace(" ", "_")} = "{value}"')
-
+            
+            if len(node.properties_info) > 0:
+                property_statements_info = [f'SET n.{key.replace(" ", "_")} = "{value}"' 
+                for key, value in node.properties_info.items()]
+                properties.extend(property_statements_info)
+            
             query = f'CREATE (n:{node.label} {{name: "{node.name}"}}) ' + ' '.join(properties)
             queries.append(query)
         return queries
@@ -108,12 +113,19 @@ class GraphIntegrator:
         """
         rels = []
         for rel in knowledge_graph.relationships:
+            property_statements_info = ' '.join(
+            [f'SET r.{key.replace(" ", "_")} = "{value}"' 
+             for key, value in rel.properties_info.items()]
+            )
+            
             property_statements = ' '.join(
             [f'SET r.{key.replace(" ", "_")} = "{value}"' 
              if key != "embeddings" 
              else f'SET r.{key.replace(" ", "_")} = "{GraphIntegrator.transform_embeddings_to_str_list(value)}"' 
              for key, value in rel.properties.model_dump().items()]
             )
+            
+            property_statements = property_statements + " " + property_statements_info 
             
             query = (
                 f'MATCH (n:{rel.startEntity.label} {{name: "{rel.startEntity.name}"}}), '

@@ -17,6 +17,7 @@ class Entity(BaseModel):
     label:str = ""
     name:str = ""
     properties:EntityProperties = EntityProperties()
+    properties_info:dict = {}
     
     def process(self):
         # Replace spaces, dashes, periods, and '&' in names with underscores or 'and'.
@@ -43,13 +44,14 @@ class Entity(BaseModel):
         return hash((self.name, self.label))
     
     def __repr__(self):
-        return f"Entity(name={self.name}, label={self.label}, properties={self.properties})"
+        return f"Entity(name={self.name}, label={self.label}, properties={self.properties}, properties_info={self.properties_info})"
 
 class Relationship(BaseModel):
     startEntity:Entity = Entity()
     endEntity:Entity = Entity()
     name:str = ""
     properties:RelationshipProperties = RelationshipProperties()
+    properties_info:dict = {}
     
     def process(self):
         # Replace spaces, dashes, periods, and '&' in names with underscores or 'and'.
@@ -71,7 +73,7 @@ class Relationship(BaseModel):
         return hash((self.name, self.startEntity, self.endEntity))
 
     def __repr__(self):
-        return f"Relationship(name={self.name}, startEntity={self.startEntity}, endEntity={self.endEntity}, properties={self.properties})"
+        return f"Relationship(name={self.name}, startEntity={self.startEntity}, endEntity={self.endEntity}, properties={self.properties}, properties_info={self.properties_info})"
     
 
 class KnowledgeGraph(BaseModel):
@@ -118,6 +120,7 @@ class KnowledgeGraph(BaseModel):
         Remove duplicate entities (entities) by relying on the `__hash__` and `__eq__` methods of the `Entity` class.
         This will update the `entities` attribute by filtering out duplicates.
         """
+        
         self.entities = list(set(self.entities))  # Using set to automatically remove duplicates based on hash and eq methods
 
     def remove_duplicates_relationships(self) -> None:
@@ -125,9 +128,27 @@ class KnowledgeGraph(BaseModel):
         Remove duplicate relationships by relying on the `__hash__` and `__eq__` methods of the `Relationship` class.
         This will update the `relationships` attribute by filtering out duplicates.
         """
-        self.relationships = list(set(self.relationships))  # Using set to automatically remove duplicates based on hash and eq methods
+        all_relationship = self.relationships
+        relationship_list = []
+        output_relationship = []
+        
+        for relationship in all_relationship:
+            relationship_tuple_1 = (relationship.startEntity.name, relationship.endEntity.name, relationship.name)
+            relationship_tuple_2 = (relationship.endEntity.name, relationship.startEntity.name, relationship.name)
+            if relationship_tuple_1 not in relationship_list and relationship_tuple_2 not in relationship_list:
+                relationship_list.append(relationship_tuple_1)
+                relationship_list.append(relationship_tuple_2)
+                output_relationship.append(relationship)
+        self.relationships = output_relationship
+        
+       # self.relationships = list(set(self.relationships))  # Using set to automatically remove duplicates based on hash and eq methods
     
     def find_isolated_entities(self):
         relation_entities = set(rel.startEntity for rel in self.relationships) | set(rel.endEntity for rel in self.relationships)
         isolated_entities = [ent for ent in self.entities if ent not in relation_entities]
         return isolated_entities
+    
+    def remove_isolated_entities(self):
+        isolated_entities = self.find_isolated_entities()
+        print(f"INFO ---- Removing isolated entities {[i.name for i in isolated_entities]}")
+        self.entities = [ent for ent in self.entities if ent not in isolated_entities]

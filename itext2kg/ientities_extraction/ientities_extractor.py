@@ -20,6 +20,7 @@ class iEntitiesExtractor():
                                                        sleep_time=sleep_time) 
     
     def extract_entities(self, context: str, 
+                         entities_info:dict=None,
                          max_tries:int=5,
                          entity_name_weight:float=0.6,
                          entity_label_weight:float=0.4) -> List[Entity]:
@@ -67,10 +68,31 @@ class iEntitiesExtractor():
         if not entities or "entities" not in entities:
             raise ValueError("Failed to extract entities after multiple attempts.")
 
+        raw_entities = entities["entities"]
+        entities_info_list = []
+        entities_info = {key.lower(): value for key, value in entities_info.items()}
+        for entity in raw_entities:
+            if entity['name'].lower() in entities_info.keys():
+                entity['properties'] = {'unique_id':entities_info[entity['name'].lower()]['unique_id']}
+                entity['label'] = entities_info[entity['name'].lower()]['label']
+                print(f"INFO --- {entity['name'].lower()} add unique_id and label")
+            else:
+                entity['properties'] = {}
+            entities_info_list.append(entity)
+        
+        entities["entities"] = entities_info_list
+        entities["entities"] = [entity for entity in entities["entities"]
+                                if entity["label"].lower() in [
+                                    'gene', 'protein', 'disease', 
+                                    'drug', 'chemical', 'metabolite', 
+                                    'variant', 'cell line','region',
+                                    'cell type','processes','pathway',
+                                    ]]
+        
         print (entities)
-        entities = [Entity(label=entity["label"], name = entity["name"]) 
+        entities = [Entity(label=entity["label"], name = entity["name"], properties_info=entity['properties']) 
                     for entity in entities["entities"]]
-        #print(entities)
+        # print (entities)
         kg = KnowledgeGraph(entities = entities, relationships=[])
         kg.embed_entities(
             embeddings_function=lambda x:self.langchain_output_parser.calculate_embeddings(x),

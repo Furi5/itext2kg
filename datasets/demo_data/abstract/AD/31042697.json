@@ -1,0 +1,63 @@
+{
+    "disease": [
+        {
+            "disease": "Alzheimer's Disease"
+        }
+    ],
+    "gene": [
+        {
+            "gene": "APP"
+        },
+        {
+            "gene": "PS1"
+        }
+    ],
+    "metabolite": [
+        {
+            "metabolite": "Cholesterol"
+        }
+    ],
+    "protein": [
+        {
+            "protein": "Amyloid-beta protein"
+        }
+    ],
+    "pathway": [
+        {
+            "pathway": "MAPK signaling pathway"
+        }
+    ],
+    "region": [
+        {
+            "region": "Hippocampus"
+        }
+    ],
+    "omics_type": "Transcriptomic",
+    "expression_method": "Single-cell RNA-sequencing",
+    "assay_group": "Treatment vs. Control",
+    "processes": [
+        {
+            "process": "Apoptosis"
+        }
+    ],
+    "cell_type": [
+        {
+            "cell_type": "Neuron"
+        }
+    ],
+    "regulation": [
+        {
+            "regulation": "Inflammation"
+        }
+    ],
+    "variant": [
+        {
+            "variant": "rs63750842"
+        }
+    ],
+    "chemical": [
+        {
+            "chemical": "Donepezil"
+        }
+    ]
+}

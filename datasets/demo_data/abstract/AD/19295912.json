@@ -1,0 +1,22 @@
+{
+    "disease": [
+        {
+            "disease": "Alzheimer's disease"
+        }
+    ],
+    "region": [
+        {
+            "region": "prefrontal cortex"
+        }
+    ],
+    "omics_type": "transcriptomic",
+    "expression_method": "bulk RNA-sequencing",
+    "processes": [
+        {
+            "species": "neurodegenerative pathways"
+        },
+        {
+            "species": "gene expression changes"
+        }
+    ]
+}

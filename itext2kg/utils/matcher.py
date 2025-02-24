@@ -18,32 +18,44 @@ class Matcher:
         :param threshold: Cosine similarity threshold.
         :return: The best match or the original object if no match is found.
         """
-        name1 = obj1.name
+        name1 = obj1.name 
+        unique_ID1 = obj1.properties_info['unique_id'] if 'unique_id' in obj1.properties_info.keys() else None
         label1 = obj1.label if isinstance(obj1, Entity) else None
         emb1 = np.array(obj1.properties.embeddings).reshape(1, -1)
-        best_match = None
+        # best_match = None
         best_cosine_sim = threshold
 
         for obj2 in list_objects:
+            best_match = None
             name2 = obj2.name
+            unique_ID2 = obj2.properties_info['unique_id'] if 'unique_id' in obj2.properties_info.keys() else None
             label2 = obj2.label if isinstance(obj2, Entity) else None
             emb2 = np.array(obj2.properties.embeddings).reshape(1, -1)
+            
+            if name1 == 'iad' and name2 == "alzheimer's disease" or name1 == "alzheimer's disease" and name2 == 'iad':
+                print(f'here [{obj1.name}:{unique_ID1}], [{obj2.name}:{unique_ID2}]')
 
+            if unique_ID2 and unique_ID1:
+                if unique_ID1 == unique_ID2:
+                    print(f"[INFO] Wohoo! Unique ID matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj2.name}:{obj2.label}]")
+                    return obj1
+            
             if name1 == name2 and label1 == label2:
                 return obj1
+            
             cosine_sim = cosine_similarity(emb1, emb2)[0][0]
-            if cosine_sim > best_cosine_sim:
+            if cosine_sim >= threshold:
                 best_cosine_sim = cosine_sim
                 best_match = obj2
 
         if best_match:
             if isinstance(obj1, Relationship):
-                print(f"[INFO] Wohoo! Relation was matched --- [{obj1.name}] --merged --> [{best_match.name}] ")
+                print(f"[INFO] Wohoo! consine sim {cosine_sim} >= {threshold} Relation was matched --- [{obj1.name}] --merged --> [{best_match.name}] ")
                 obj1.name = best_match.name
                 obj1.properties.embeddings = best_match.properties.embeddings
                 
             elif isinstance(obj1, Entity):
-                print(f"[INFO] Wohoo! Entity was matched --- [{obj1.name}:{obj1.label}] --merged--> [{best_match.name}:{best_match.label}]")
+                print(f"[INFO] Wohoo!  {cosine_sim} >= {threshold} Entity was matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj1.name}:{best_match.label}]")
                 return best_match
 
         return obj1
@@ -78,8 +90,8 @@ class Matcher:
                     existing_relation_names.add(obj2.name)
 
         return union_list
-
-
+    
+    
     def process_lists(self, 
                       list1: List[Union[Entity, Relationship]], 
                       list2: List[Union[Entity, Relationship]], 
@@ -103,8 +115,8 @@ class Matcher:
                                                 entities2: List[Entity],
                                                 relationships1: List[Relationship],
                                                 relationships2: List[Relationship],
-                                                rel_threshold: float = 0.8,
-                                                ent_threshold: float = 0.8
+                                                rel_threshold: float = 1,
+                                                ent_threshold: float = 1
                                             ) -> Tuple[List[Entity], List[Relationship]]:
         """
         Match two lists of entities (Entities) and update the relationships list accordingly.
@@ -118,7 +130,7 @@ class Matcher:
         """
         # Step 1: Match the entities and relations from both lists
         matched_entities1, global_entities = self.process_lists(entities1, entities2, ent_threshold)
-        matched_relations, _ = self.process_lists(relationships1, relationships2, rel_threshold)
+        # matched_relations, _ = self.process_lists(relationships1, relationships2, rel_threshold)
 
         # Step 2: Create a mapping from old entity names to matched entity names
         entity_name_mapping = {
@@ -141,6 +153,6 @@ class Matcher:
             return updated_relationships
 
         # Step 4: Extend relationships2 with updated relationships
-        relationships2.extend(update_relationships(matched_relations))
+        relationships2.extend(update_relationships(relationships1))
 
         return global_entities, relationships2

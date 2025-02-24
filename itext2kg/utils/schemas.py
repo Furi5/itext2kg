@@ -133,3 +133,53 @@ class Novel(BaseModel):
     plot_summary: str = Field(description="A brief summary of the overall plot")
     key_plot_points: List[PlotPoint] = Field(description="Key plot points or events in the novel")
     themes: Optional[List[str]] = Field(description="Main themes explored in the novel, e.g., love, revenge, etc.")
+    
+# ---------------------------- abstract ------------------------------------- #
+
+class AbstractPathway(BaseModel):
+    pathway: Optional[str] = Field(None, description="The subject entity is the term from molecular biology for a curated schematic representation of a well characterized segment of the molecular physiological machinery, such as a metabolic pathway describing an enzymatic process within a cell or tissue or a signaling pathway model representing a regulatory process.")
+
+class AbstractDisease(BaseModel):
+    disease: Optional[str] = Field(None, description="The subject entity is a pathological condition of the body or one of its parts, characterized by an identifiable group of signs or symptoms.")
+
+class AbstractGene(BaseModel):
+    gene: Optional[str] = Field(None, description="The subject entity is a genes name, which is a unit of heredity transferred from parent to offspring that determines some characteristic of the offspring.")
+
+class AbstractMetabolite(BaseModel):
+    metabolite: Optional[str] = Field(None, description="The subject entity are the intermediate products of metabolic reactions catalyzed by various enzymes that naturally occur within cells.")
+
+class AbstractProtein(BaseModel):
+    protein: Optional[str] = Field(None, description="The subject entity is a protein name, which means a large biomolecule consisting of one or more long chains of amino acids.")
+
+class AbstractRegion(BaseModel):
+    region: Optional[str] = Field(None, description="The subject entity is a type of region, such as a brain region.")
+
+class AbstractProcesses(BaseModel):
+    species: Optional[str] = Field(None, description="The subject entity is a biological process")
+
+class AbstractCellType(BaseModel):
+    cell_type: Optional[str] = Field(None, description="The subject entity is the cell types, like brain cell types, immune cell types, etc.")
+
+class AbstractVariants(BaseModel):
+    variant: Optional[str] = Field(None, description="The subject entity is the variant of the gene.")
+
+class AbstractChemical(BaseModel):
+    chemical: Optional[str] = Field(None, description="The subject entity is the chemical name.")
+
+class AbstractRegulation(BaseModel):
+    regulation: Optional[str] = Field(None, description="The subject entity is the regulation name or regulator names, like myelination, inflammation, neuron survival")
+
+
+class DiseaseArticle(BaseModel):
+    disease: List[AbstractDisease] = Field(None, description="The list of diseases associated with the article.")
+    gene: List[AbstractGene] = Field(None,description="The list of genes associated with the article.")
+    metabolite: List[AbstractMetabolite] = Field(None, description="The list of metabolites associated with the article.")
+    protein: List[AbstractGene] = Field(None, description="The list of proteins associated with the article.")
+    pathway: List[AbstractPathway] = Field(...,description="List of pathways associated with the disease.")
+    region: List[AbstractRegion] = Field(...,description="The list of regions associated with the article.")
+    omics_type: Optional[str] = Field(None, description="The subject entity is one of transcriptomic, proteomic, or metabolomic.")
+    expression_method: Optional[str] = Field(None, description="The subject entity is a technique used to measure gene expression levels, such as microarray, bulk RNA-seq, single-cell RNA-seq, or  qRT-PCR.")
+    assay_group: Optional[str] = Field(None, description="The subject entity is a set of samples groups and control groups.")
+    processes: List[AbstractProcesses] = Field(None, description="The list of biological processes associated with the article.")
+    cell_types: List[AbstractCellType] = Field(None, description="The list of cell line names associated with the article.")
+    # regulation: List[AbstractRegulation] = Field(None, description="The list of regulators names associated with the article.")

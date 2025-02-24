@@ -1,5 +1,5 @@
 from .llm_output_parser import LangchainOutputParser
-from .schemas import InformationRetriever, EntitiesExtractor, RelationshipsExtractor, Article, CV
+from .schemas import InformationRetriever, EntitiesExtractor, RelationshipsExtractor, Article, CV, DiseaseArticle
 from .matcher import Matcher
 
 __all__ = ["LangchainOutputParser", 
@@ -9,4 +9,5 @@ __all__ = ["LangchainOutputParser",
            "RelationshipsExtractor", 
            "Article", 
            "CV"
+           "DiseaseArticle",
            ]

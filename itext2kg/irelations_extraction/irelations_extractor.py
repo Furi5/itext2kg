@@ -49,10 +49,13 @@ class iRelationsExtractor:
             ValueError: If relationship extraction fails after multiple attempts.
         """
         # we would not give the LLM complex data structure as context to avoid the hallucination as much as possible
+        
         entities_simplified = [(entity.name, entity.label) for entity in entities]
         formatted_context = f"context : --\n'{context}' \n entities :-- \n {entities_simplified}"
         IE_query = '''# Directives
                         - Extract relationships between the provided entities based on the context.
+                        - identify all pairs of (startNode, EndNode) that are *clearly related* to each other.
+                        - relationship_description: explanation as to why you think the source entity and the target entity are related to each other
                         - Adhere completely to the provided entities list.
                         - Do not change the name or label of the provided entities list.
                         - Do not add any entity outside the provided list.
@@ -92,59 +95,65 @@ class iRelationsExtractor:
         kg_llm_output = KnowledgeGraph(relationships=[], entities = entities)
         
         # -------- Verification of invented entities and matching to the closest ones from the input entities-------- #
+        
         print("[INFO] Verification of invented entities")
         for relationship in relationships["relationships"]:
-            startEntity = Entity(label=relationship["startNode"]["label"], name = relationship["startNode"]["name"])
-            endEntity = Entity(label=relationship["endNode"]["label"], name = relationship["endNode"]["name"])
-            
-            startEntity.process()
-            endEntity.process()
-            
-            startEntity_in_input_entities = kg_llm_output.get_entity(startEntity)
-            endEntity_in_input_entities = kg_llm_output.get_entity(endEntity)
-            
-            if startEntity_in_input_entities is not None and endEntity_in_input_entities is not None :
-                curated_relationships.append(Relationship(startEntity= startEntity_in_input_entities, 
-                                      endEntity = endEntity_in_input_entities,
-                                      name = relationship["name"]))
+            if relationship.keys() != {"startNode", "endNode", "name"}:
+                continue
+            elif relationship["startNode"].keys() != {"label", "name"} or relationship["endNode"].keys() != {"label", "name"}:
+                continue
+            else:
+                startEntity = Entity(label=relationship["startNode"]["label"], name = relationship["startNode"]["name"])
+                endEntity = Entity(label=relationship["endNode"]["label"], name = relationship["endNode"]["name"])
                 
-            elif startEntity_in_input_entities is None and endEntity_in_input_entities is None:
-                print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
-                startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings, 
-                                         entity_label_weight=entity_label_weight, 
-                                         entity_name_weight=entity_name_weight)
-                endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
-                                       entity_label_weight=entity_label_weight,
-                                       entity_name_weight=entity_name_weight)
+                startEntity.process()
+                endEntity.process()
                 
-                startEntity = self.matcher.find_match(obj1=startEntity, list_objects=entities, threshold=0.5)
-                endEntity = self.matcher.find_match(obj1=endEntity, list_objects=entities, threshold=0.5)
+                startEntity_in_input_entities = kg_llm_output.get_entity(startEntity)
+                endEntity_in_input_entities = kg_llm_output.get_entity(endEntity)
                 
-                curated_relationships.append(Relationship(startEntity= startEntity, 
-                                      endEntity = endEntity,
-                                      name = relationship["name"]))
-                
-            elif startEntity_in_input_entities is None:
-                print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
-                startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
-                                         entity_label_weight=entity_label_weight,
-                                         entity_name_weight=entity_name_weight)
-                startEntity = self.matcher.find_match(obj1=startEntity, list_objects=entities, threshold=0.5)
-                
-                curated_relationships.append(Relationship(startEntity= startEntity, 
-                                      endEntity = endEntity,
-                                      name = relationship["name"]))
-                
-            elif endEntity_in_input_entities is None:
-                print(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
-                endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
-                                       entity_label_weight=entity_label_weight,
-                                       entity_name_weight=entity_name_weight)
-                endEntity = self.matcher.find_match(obj1=endEntity, list_objects=entities, threshold=0.5)
-                
-                curated_relationships.append(Relationship(startEntity= startEntity, 
-                                      endEntity = endEntity,
-                                      name = relationship["name"]))
+                if startEntity_in_input_entities is not None and endEntity_in_input_entities is not None :
+                    curated_relationships.append(Relationship(startEntity= startEntity_in_input_entities, 
+                                        endEntity = endEntity_in_input_entities,
+                                        name = relationship["name"]))
+                    
+                elif startEntity_in_input_entities is None and endEntity_in_input_entities is None:
+                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
+                    startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings, 
+                                            entity_label_weight=entity_label_weight, 
+                                            entity_name_weight=entity_name_weight)
+                    endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
+                                        entity_label_weight=entity_label_weight,
+                                        entity_name_weight=entity_name_weight)
+                    
+                    startEntity = self.matcher.find_match(obj1=startEntity, list_objects=entities, threshold=0.99)
+                    endEntity = self.matcher.find_match(obj1=endEntity, list_objects=entities, threshold=0.99)
+                    
+                    curated_relationships.append(Relationship(startEntity= startEntity, 
+                                        endEntity = endEntity,
+                                        name = relationship["name"]))
+                    
+                elif startEntity_in_input_entities is None:
+                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
+                    startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
+                                            entity_label_weight=entity_label_weight,
+                                            entity_name_weight=entity_name_weight)
+                    startEntity = self.matcher.find_match(obj1=startEntity, list_objects=entities, threshold=0.9)
+                    
+                    curated_relationships.append(Relationship(startEntity= startEntity, 
+                                        endEntity = endEntity,
+                                        name = relationship["name"]))
+                    
+                elif endEntity_in_input_entities is None:
+                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
+                    endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
+                                        entity_label_weight=entity_label_weight,
+                                        entity_name_weight=entity_name_weight)
+                    endEntity = self.matcher.find_match(obj1=endEntity, list_objects=entities, threshold=0.9)
+                    
+                    curated_relationships.append(Relationship(startEntity= startEntity, 
+                                        endEntity = endEntity,
+                                        name = relationship["name"]))
         
         kg = KnowledgeGraph(relationships = curated_relationships, entities=entities)
         kg.embed_relationships(
@@ -156,6 +165,7 @@ class iRelationsExtractor:
     def extract_verify_and_correct_relations(self,
                           context: str, 
                           entities: List[Entity],
+                          source:str=None,
                           rel_threshold:float = 0.7,
                           max_tries:int=5,
                           max_tries_isolated_entities:int=3,
@@ -177,7 +187,7 @@ class iRelationsExtractor:
         
         Returns:
             List[Relationship]: A list of curated Relationship instances after verification and correction.
-        """
+        """                
         tries = 0
         isolated_entities_without_relations:List[Entity]= []
         curated_relationships = self.extract_relations(context=context,
@@ -191,9 +201,9 @@ class iRelationsExtractor:
                                                              relationships=curated_relationships).find_isolated_entities()
         
         while tries < max_tries_isolated_entities and isolated_entities_without_relations:
-            print(f"[INFO][ISOLATED ENTITIES][TRY-{tries+1}] Aie; there are some isolated entities without relations {isolated_entities_without_relations}. Solving them ...")  
+            # print(f"[INFO][ISOLATED ENTITIES][TRY-{tries+1}] Aie; there are some isolated entities without relations {isolated_entities_without_relations}. Solving them ...")  
             corrected_relationships = self.extract_relations(context = context, 
-                                entities=isolated_entities_without_relations,
+                                entities=entities,
                                 isolated_entities_without_relations=isolated_entities_without_relations,
                                 entity_name_weight=entity_name_weight,
                                 entity_label_weight=entity_label_weight)
@@ -201,5 +211,10 @@ class iRelationsExtractor:
             curated_relationships.extend(matched_corrected_relationships)
                 
             isolated_entities_without_relations = KnowledgeGraph(entities=entities, relationships=corrected_relationships).find_isolated_entities()
-            tries += 1
+            tries += 1             
+
+        # 为关系添加来源信息
+        for i in range(len(curated_relationships)):
+            curated_relationships[i].properties_info = source
+            
         return curated_relationships
