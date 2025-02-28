@@ -1,6 +1,8 @@
 from ..utils import LangchainOutputParser, EntitiesExtractor
 from ..models import Entity, KnowledgeGraph
 from typing import List
+import logging
+
 class iEntitiesExtractor():
     """
     A class to extract entities from text using natural language processing tools and embeddings.
@@ -61,7 +63,7 @@ class iEntitiesExtractor():
                     break
                 
             except Exception as e:
-                print(f"Not Formatted in the desired format. Error occurred: {e}. Retrying... (Attempt {tries + 1}/{max_tries})")
+                logging.info(f"Not Formatted in the desired format. Error occurred: {e}. Retrying... (Attempt {tries + 1}/{max_tries})")
 
             tries += 1
     
@@ -75,7 +77,7 @@ class iEntitiesExtractor():
             if entity['name'].lower() in entities_info.keys():
                 entity['properties'] = {'unique_id':entities_info[entity['name'].lower()]['unique_id']}
                 entity['label'] = entities_info[entity['name'].lower()]['label']
-                print(f"INFO --- {entity['name'].lower()} add unique_id and label")
+                logging.info(f"INFO --- {entity['name'].lower()} add unique_id and label")
             else:
                 entity['properties'] = {}
             entities_info_list.append(entity)
@@ -89,10 +91,10 @@ class iEntitiesExtractor():
                                     'cell type','processes','pathway',
                                     ]]
         
-        print (entities)
+        logging.info (entities)
         entities = [Entity(label=entity["label"], name = entity["name"], properties_info=entity['properties']) 
                     for entity in entities["entities"]]
-        # print (entities)
+        # logging.info (entities)
         kg = KnowledgeGraph(entities = entities, relationships=[])
         kg.embed_entities(
             embeddings_function=lambda x:self.langchain_output_parser.calculate_embeddings(x),

@@ -1,7 +1,10 @@
 import numpy as np
+import logging
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Tuple, Union
 from ..models import Entity, Relationship
+
+
 class Matcher:
     """
     Class to handle the matching and processing of entities or relations based on cosine similarity or name matching.
@@ -22,42 +25,42 @@ class Matcher:
         unique_ID1 = obj1.properties_info['unique_id'] if 'unique_id' in obj1.properties_info.keys() else None
         label1 = obj1.label if isinstance(obj1, Entity) else None
         emb1 = np.array(obj1.properties.embeddings).reshape(1, -1)
-        # best_match = None
+        best_match = None
         best_cosine_sim = threshold
 
+        duplicates = []
         for obj2 in list_objects:
-            best_match = None
             name2 = obj2.name
             unique_ID2 = obj2.properties_info['unique_id'] if 'unique_id' in obj2.properties_info.keys() else None
             label2 = obj2.label if isinstance(obj2, Entity) else None
             emb2 = np.array(obj2.properties.embeddings).reshape(1, -1)
             
-            if name1 == 'iad' and name2 == "alzheimer's disease" or name1 == "alzheimer's disease" and name2 == 'iad':
-                print(f'here [{obj1.name}:{unique_ID1}], [{obj2.name}:{unique_ID2}]')
-
             if unique_ID2 and unique_ID1:
                 if unique_ID1 == unique_ID2:
-                    print(f"[INFO] Wohoo! Unique ID matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj2.name}:{obj2.label}]")
+                    logging.info(f"[INFO] Wohoo! Unique ID matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj2.name}:{obj2.label}]")
                     return obj1
             
             if name1 == name2 and label1 == label2:
                 return obj1
             
             cosine_sim = cosine_similarity(emb1, emb2)[0][0]
+            if isinstance(obj1, Relationship):
+                if obj1.name != obj2.name and obj1.startEntity == obj2.startEntity and obj1.endEntity == obj2.endEntity:
+                    cosine_sim = 1.0
+            
             if cosine_sim >= threshold:
                 best_cosine_sim = cosine_sim
                 best_match = obj2
-
+    
         if best_match:
             if isinstance(obj1, Relationship):
-                print(f"[INFO] Wohoo! consine sim {cosine_sim} >= {threshold} Relation was matched --- [{obj1.name}] --merged --> [{best_match.name}] ")
+                logging.info(f"[INFO] Wohoo! consine sim {cosine_sim} >= {threshold} Relation was matched --- [{obj1.name}] --merged --> [{best_match.name}] ")
                 obj1.name = best_match.name
                 obj1.properties.embeddings = best_match.properties.embeddings
                 
             elif isinstance(obj1, Entity):
-                print(f"[INFO] Wohoo!  {cosine_sim} >= {threshold} Entity was matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj1.name}:{best_match.label}]")
+                logging.info(f"[INFO] Wohoo!  {cosine_sim} >= {threshold} Entity was matched --- [{obj1.name}:{obj1.label}] --merged--> [{obj1.name}:{best_match.label}]")
                 return best_match
-
         return obj1
 
     def create_union_list(self, list1: List[Union[Entity, Relationship]], list2: List[Union[Entity, Relationship]]) -> List[Union[Entity, Relationship]]:
@@ -107,7 +110,32 @@ class Matcher:
         list3 = [self.find_match(obj1, list2, threshold=threshold) for obj1 in list1] #matched_local_items
         list4 = self.create_union_list(list3, list2) #new_global_items
         return list3, list(set(list4))
-    
+
+    def find_longest_string(self, names):
+        """
+    Finds the longest string in a list of strings.
+
+    Args:
+        names: A list of strings.
+
+    Returns:
+        The longest string in the list.
+        Returns None if the input list is empty or contains non-string elements.
+    """
+
+        if not names:
+            return None  # Handle empty list case
+
+        longest_string = ""
+        for name in names:
+            if not isinstance(name, str):
+                logging.info(f"Warning: Skipping non-string element: {name}")
+                continue  # Skip non-string elements
+
+            if len(name) > len(longest_string):
+                longest_string = name
+
+        return longest_string
     
     def match_entities_and_update_relationships(
                                                 self,
@@ -156,3 +184,97 @@ class Matcher:
         relationships2.extend(update_relationships(relationships1))
 
         return global_entities, relationships2
+    
+    def merge_entities_relationship_by_unique_id(self, entities: List[Entity], relationships: List[Relationship]) -> Tuple[List[Entity], List[Relationship]]:
+        """Merges entities and updates relationships based on unique_ID."""
+        logging.info("Merging entities and relationships by unique_ID...")
+
+        # Group entities by unique_ID
+        grouped_entities = {}
+        for entity in entities:
+            unique_id = entity.properties_info.get('unique_id')
+            if unique_id:
+                if unique_id not in grouped_entities:
+                    grouped_entities[unique_id] = []
+                grouped_entities[unique_id].append(entity) #The grouped entities now has the actual object in it, not just names!
+
+        #Process it in the next steps
+        entities_output = []
+        relationships_output = []
+        processed_entities = set() #Set to store entities that have already been processed, because some entities were added multiple times.
+
+        for unique_ID, entity_group in grouped_entities.items():
+            #If only 1 item there's no duplicates!
+            if len(entity_group) <= 1:
+                for entity in entity_group:
+                    if entity not in processed_entities: #Check if it's already been proccessed and added
+                        entities_output.append(entity)
+                        processed_entities.add(entity)
+                continue #Skip to the next object
+
+            #If there is more than one entity, start the merging process
+            # 1. Find the "best" entity to use as the representative
+            best_entity = self.find_longest_string([entity.name for entity in entity_group if entity.name is not None and entity.name !=""]) #Protect from empty names!
+            for entity in entity_group:
+                if entity.name == best_entity:
+                    main_entity = entity # Set the main Entity that you'll be referring too. It has the longest name!
+
+            # Loop to assign relationships
+            for r in relationships: #Iterate through all relationships
+                #Update it, if the start or end entities are within the same object
+                if hasattr(r, 'startEntity') and r.startEntity in entity_group:
+                    r.startEntity = main_entity
+                if hasattr(r, 'endEntity') and r.endEntity in entity_group:
+                    r.endEntity = main_entity
+
+            #Add everything in the correct spot.
+            entities_output.append(main_entity) #The main_entity
+
+            for entity in entity_group:
+                if entity not in processed_entities: #Ensure it's not a duplicate from a previously run.
+                    processed_entities.add(entity)
+                    print ("WARNING: this entity wasn't updated!")
+
+        #After you go throguh it all. Update the objects in the set and just the unique ones!
+        for r in relationships:
+            if r not in relationships_output:
+                if r.startEntity != r.endEntity: #Add None Protection & Remove Reflexive
+                    relationships_output.append(r)
+
+        logging.info(f"Merged duplicate entities, original:{len(entities)} -> deduped:{len(entities_output)}, and relationships, original:{len(relationships)} -> deduped:{len(relationships_output)}.")
+                    
+        return entities_output, relationships_output
+    
+    def merge_relationships(self, relationships: List[Relationship]) -> List[Relationship]:
+        """
+        Merges relationships in a list where the start and end entities are the same,
+        removing duplicates. If multiple relationships share the same start and end entities,
+        a random name is chosen from the available names, and only one relationship object remains.
+
+        Args:
+            global_relationships (list): A list of relationship objects.
+
+        Returns:
+            list: A new list with merged and deduplicated relationships.
+        """
+
+        merged_relationships = []
+        processed = set()  # To keep track of relationship indices already merged
+
+        for i, ri in enumerate(relationships):
+            if i in processed:
+                continue  # Skip if already processed
+            if ri.startEntity == ri.endEntity:
+                continue
+            
+            for j, rj in enumerate(relationships):
+                if i != j and ri.startEntity == rj.startEntity and ri.endEntity == rj.endEntity:
+                    # Merge relationships with the same start and end entities
+                    processed.add(j)  # Mark relationship as processed
+        
+            merged_relationships.append(ri)  # Add the merged relationship
+            processed.add(i)
+
+        return merged_relationships
+    
+

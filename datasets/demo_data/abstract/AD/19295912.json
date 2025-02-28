@@ -10,13 +10,5 @@
         }
     ],
     "omics_type": "transcriptomic",
-    "expression_method": "bulk RNA-sequencing",
-    "processes": [
-        {
-            "species": "neurodegenerative pathways"
-        },
-        {
-            "species": "gene expression changes"
-        }
-    ]
+    "expression_method": "bulk RNA-sequencing"
 }

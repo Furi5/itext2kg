@@ -5,6 +5,7 @@ import time
 import openai
 from typing import Union, List
 import numpy as np
+import logging
 
 class LangchainOutputParser:
     """
@@ -92,15 +93,15 @@ class LangchainOutputParser:
         try:
             return chain.invoke({"query": IE_query})
         except openai.BadRequestError as e:
-            print(f"Too much requests, we are sleeping! \n the error is {e}")
+            logging.info(f"Too much requests, we are sleeping! \n the error is {e}")
             time.sleep(self.sleep_time)
             return self.extract_information_as_json_for_context(context=context)
 
         except openai.RateLimitError:
-            print("Too much requests exceeding rate limit, we are sleeping!")
+            logging.info("Too much requests exceeding rate limit, we are sleeping!")
             time.sleep(self.sleep_time)
             return self.extract_information_as_json_for_context(context=context)
             
         except OutputParserException:
-            print(f"Error in parsing the instance {context}")
+            logging.info(f"Error in parsing the instance {context}")
             pass

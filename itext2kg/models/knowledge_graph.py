@@ -2,6 +2,7 @@ from pydantic import BaseModel, SkipValidation
 from typing import Callable
 import numpy as np
 import re
+import logging
 
 class EntityProperties(BaseModel):
     embeddings: SkipValidation[np.array]=None
@@ -150,5 +151,5 @@ class KnowledgeGraph(BaseModel):
     
     def remove_isolated_entities(self):
         isolated_entities = self.find_isolated_entities()
-        print(f"INFO ---- Removing isolated entities {[i.name for i in isolated_entities]}")
+        logging.info(f"INFO ---- Removing isolated entities {[i.name for i in isolated_entities]}")
         self.entities = [ent for ent in self.entities if ent not in isolated_entities]

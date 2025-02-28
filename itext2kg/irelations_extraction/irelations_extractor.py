@@ -1,4 +1,5 @@
 from typing import List
+import logging
 from ..utils import LangchainOutputParser, RelationshipsExtractor, Matcher
 from ..models import Entity, Relationship, KnowledgeGraph
 
@@ -85,18 +86,18 @@ class iRelationsExtractor:
                     break
                 
             except Exception as e:
-                print(f"Not Formatted in the desired format. Error occurred: {e}. Retrying... (Attempt {tries + 1}/{max_tries})")
+                logging.info(f"Not Formatted in the desired format. Error occurred: {e}. Retrying... (Attempt {tries + 1}/{max_tries})")
 
             tries += 1
     
         if not relationships or "relationships" not in relationships:
             raise ValueError("Failed to extract relationships after multiple attempts.")
-        print(relationships)
+        logging.info(relationships)
         kg_llm_output = KnowledgeGraph(relationships=[], entities = entities)
         
         # -------- Verification of invented entities and matching to the closest ones from the input entities-------- #
         
-        print("[INFO] Verification of invented entities")
+        logging.info("[INFO] Verification of invented entities")
         for relationship in relationships["relationships"]:
             if relationship.keys() != {"startNode", "endNode", "name"}:
                 continue
@@ -118,7 +119,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif startEntity_in_input_entities is None and endEntity_in_input_entities is None:
-                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
+                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
                     startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings, 
                                             entity_label_weight=entity_label_weight, 
                                             entity_name_weight=entity_name_weight)
@@ -134,7 +135,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif startEntity_in_input_entities is None:
-                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
+                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
                     startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
                                             entity_label_weight=entity_label_weight,
                                             entity_name_weight=entity_name_weight)
@@ -145,7 +146,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif endEntity_in_input_entities is None:
-                    print(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
+                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
                     endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
                                         entity_label_weight=entity_label_weight,
                                         entity_name_weight=entity_name_weight)
@@ -201,7 +202,7 @@ class iRelationsExtractor:
                                                              relationships=curated_relationships).find_isolated_entities()
         
         while tries < max_tries_isolated_entities and isolated_entities_without_relations:
-            # print(f"[INFO][ISOLATED ENTITIES][TRY-{tries+1}] Aie; there are some isolated entities without relations {isolated_entities_without_relations}. Solving them ...")  
+            # logging.info(f"[INFO][ISOLATED ENTITIES][TRY-{tries+1}] Aie; there are some isolated entities without relations {isolated_entities_without_relations}. Solving them ...")  
             corrected_relationships = self.extract_relations(context = context, 
                                 entities=entities,
                                 isolated_entities_without_relations=isolated_entities_without_relations,

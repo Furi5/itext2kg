@@ -1,6 +1,7 @@
 from .llm_output_parser import LangchainOutputParser
 from .schemas import InformationRetriever, EntitiesExtractor, RelationshipsExtractor, Article, CV, DiseaseArticle
 from .matcher import Matcher
+from .process import PubtatorProcessor
 
 __all__ = ["LangchainOutputParser", 
            "Matcher", 
@@ -8,6 +9,7 @@ __all__ = ["LangchainOutputParser",
            "EntitiesExtractor", 
            "RelationshipsExtractor", 
            "Article", 
-           "CV"
+           "CV",
            "DiseaseArticle",
+           "PubtatorProcessor"
            ]
