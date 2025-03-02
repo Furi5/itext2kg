@@ -1,2 +1,0 @@
-itext2kg
-tests
