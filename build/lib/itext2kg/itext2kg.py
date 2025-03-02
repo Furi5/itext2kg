@@ -3,7 +3,6 @@ from .ientities_extraction import iEntitiesExtractor
 from .irelations_extraction import iRelationsExtractor
 from .utils import Matcher, LangchainOutputParser
 from .models import KnowledgeGraph
-from .models import Chunk   
 import logging
 
 class iText2KG:
@@ -37,8 +36,6 @@ class iText2KG:
                     existing_knowledge_graph:KnowledgeGraph=None, 
                     source:str=None,
                     entities_info:dict=None,
-                    context:str=None,
-                    source_id:str=None,
                     ent_threshold:float = 0.7, 
                     rel_threshold:float = 0.7, 
                     max_tries:int=5, 
@@ -127,15 +124,7 @@ class iText2KG:
           
         global_relationships = self.matcher.merge_relationships(global_relationships)
 
-
-        global_chunk = Chunk(context=context, source_id=source_id)
-        constructed_kg = KnowledgeGraph(
-            entities=global_entities, 
-            relationships=global_relationships,
-            chunk=[global_chunk]
-            
-            )
-        
+        constructed_kg = KnowledgeGraph(entities=global_entities, relationships=global_relationships)
         constructed_kg.remove_isolated_entities()
         constructed_kg.remove_duplicates_entities()
         constructed_kg.remove_duplicates_relationships()

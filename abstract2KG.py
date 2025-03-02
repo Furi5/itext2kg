@@ -1,11 +1,11 @@
 import pandas as pd
-import numpy as np
-import json
+import logging
 import pickle
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from itext2kg.utils import PubtatorProcessor
 from itext2kg import iText2KG
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------LLM and Embeddings models---------
 llm = ChatOllama(
@@ -19,7 +19,7 @@ embeddings = OllamaEmbeddings(
 
 
 
-def main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID):
+def main(PUTATOR_PATH, OUTPUT_PATH, PMID):
 
     #----------------load context----------------
     pubtator_file = f"{PUTATOR_PATH}{PMID}.txt"
@@ -45,25 +45,30 @@ def main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID):
     
 
 if __name__ == "__main__":
-    df = pd.read_csv("/home/jovyan/my_code/RAG/AD_pmid_results.csv")
-    pmid_list = list(df['pmid'].astype(str))
-    pmid_list = pmid_list[:10]
-    #-------------PATH---------
-    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/AD_pubtabor/"
-    JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/AD"
-    OUTPUT_PATH = JSON_PATH
+    # Alzheimer
+    # df = pd.read_csv("/home/jovyan/my_code/RAG/AD_pmid_results.csv")
+    # pmid_list = list(df['pmid'].astype(str))
+    # pmid_list = pmid_list[:10]
+    # #-------------PATH---------
+    # PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/AD_pubtabor/"
+    # JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/AD"
+    # OUTPUT_PATH = JSON_PATH
     
-    for PMID in pmid_list:
-        main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID)
-    print("Done")
+    # for PMID in pmid_list:
+    #     main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID)
+    # print("Done")
     
     # Delirium
-    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Dilirum_pmid_results.csv")
+    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Delirium_pmid_results.csv")
     pmid_list = list(df1['pmid'].astype(str))
     pmid_list = pmid_list[:10]  
-    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/Deilirum_pubtabor/"
+    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/Delirium_pubtator/"
     JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/Deilirum"
+    
     OUTPUT_PATH = JSON_PATH
     for PMID in pmid_list:
-        main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID)
+        main(PUTATOR_PATH, OUTPUT_PATH, PMID)
     print("Done")
+    
+    
+    
