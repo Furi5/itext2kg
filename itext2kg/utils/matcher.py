@@ -191,17 +191,29 @@ class Matcher:
 
         # Group entities by unique_ID
         grouped_entities = {}
-        for entity in entities:
-            unique_id = entity.properties_info.get('unique_id')
-            if unique_id:
-                if unique_id not in grouped_entities:
-                    grouped_entities[unique_id] = []
-                grouped_entities[unique_id].append(entity) #The grouped entities now has the actual object in it, not just names!
-
-        #Process it in the next steps
+        processed_entities = set()
         entities_output = []
         relationships_output = []
-        processed_entities = set() #Set to store entities that have already been processed, because some entities were added multiple times.
+        
+        for entity in entities:
+            if entity.label in ['gene', 'protein', 'disease', 
+                                'drug', 'chemical', 'metabolite', 
+                                'variant', 'cell line','region',
+                                'cell type','processes','pathway',
+                                'abstract'
+                                ]:
+            
+                unique_id = entity.properties_info.get('unique_id')
+                if unique_id:
+                    if unique_id not in grouped_entities:
+                        grouped_entities[unique_id] = []
+                    grouped_entities[unique_id].append(entity) #The grouped entities now has the actual object in it, not just names!
+                else:
+                    processed_entities.add(entity)
+                    entities_output.append(entity)
+                
+        #Process it in the next steps
+        #Set to store entities that have already been processed, because some entities were added multiple times.
 
         for unique_ID, entity_group in grouped_entities.items():
             #If only 1 item there's no duplicates!
@@ -239,7 +251,8 @@ class Matcher:
         for r in relationships:
             if r not in relationships_output:
                 if r.startEntity != r.endEntity: #Add None Protection & Remove Reflexive
-                    relationships_output.append(r)
+                    if r.startEntity in entities_output and r.endEntity in entities_output:
+                        relationships_output.append(r)
 
         logging.info(f"Merged duplicate entities, original:{len(entities)} -> deduped:{len(entities_output)}, and relationships, original:{len(relationships)} -> deduped:{len(relationships_output)}.")
                     

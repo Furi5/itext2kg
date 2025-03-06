@@ -2,8 +2,7 @@ from typing import List
 from .ientities_extraction import iEntitiesExtractor
 from .irelations_extraction import iRelationsExtractor
 from .utils import Matcher, LangchainOutputParser
-from .models import KnowledgeGraph
-from .models import Chunk   
+from .models import KnowledgeGraph 
 import logging
 
 class iText2KG:
@@ -37,8 +36,6 @@ class iText2KG:
                     existing_knowledge_graph:KnowledgeGraph=None, 
                     source:str=None,
                     entities_info:dict=None,
-                    context:str=None,
-                    source_id:str=None,
                     ent_threshold:float = 0.7, 
                     rel_threshold:float = 0.7, 
                     max_tries:int=5, 
@@ -89,6 +86,7 @@ class iText2KG:
                                                                                               entity_name_weight= entity_name_weight,
                                                                                               entity_label_weight=entity_label_weight)
         
+        
         for i in range(1, len(sections)):
             logging.info("Extracting Entities from the Document")
             entities = self.ientities_extractor.extract_entities(context= sections[i],
@@ -117,23 +115,20 @@ class iText2KG:
         
         logging.info(f"{len(global_entities)} of global entities")
         logging.info(f"{len(global_relationships)} of global relationships")
+        
         global_entities, global_relationships = self.matcher.merge_entities_relationship_by_unique_id(
             entities=global_entities,
             relationships=global_relationships
         )
-      
+
         logging.info(f"{len(global_entities)} of global entities after merge")
         logging.info(f"{len(global_relationships)} of global relationships after merge")
           
         global_relationships = self.matcher.merge_relationships(global_relationships)
 
-
-        global_chunk = Chunk(context=context, source_id=source_id)
         constructed_kg = KnowledgeGraph(
             entities=global_entities, 
             relationships=global_relationships,
-            chunk=[global_chunk]
-            
             )
         
         constructed_kg.remove_isolated_entities()

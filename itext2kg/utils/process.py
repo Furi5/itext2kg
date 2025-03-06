@@ -2,6 +2,8 @@
 import logging
 import time, re
 from .schemas import DiseaseArticle
+import re
+
 
 
 class PubtatorProcessor:
@@ -18,13 +20,24 @@ class PubtatorProcessor:
         self.properties_info = self._construct_properties_info()
         self.block = self._contstruct_block()
 
+    def clean_string(self, s: str) -> str:
+        """
+        去除字符串中的双引号和特殊字符，仅保留字母、数字和空格。
+
+        :param s: 原始字符串
+        :return: 处理后的字符串
+        """
+        s = s.replace('"', '')  # 去除双引号
+        s = re.sub(r'[\'\"@#$^&*(){}[\]<>:;.,!?/\\|+=~`]', '', s) # 仅保留字母、数字和空格
+        return s.strip()  # 去除首尾空格
+    
     def _process_pubtator(self): #Start every private function with _
         """Processes a PubTator file to extract context and entity information."""
         logging.info(f"Processing PubTator file: {self.pubtator_file}")
 
         try:
             with open(self.pubtator_file, "r") as f: #self.variable
-                text_line = [line.strip() for line in f.readlines()] # Strip AND filter out empty lines
+                text_line = [self.clean_string(line.strip()) for line in f.readlines()] # Strip AND filter out empty lines
 
             PMID = text_line[0].split('|')[0]
             title = text_line[0].split('|')[-1]

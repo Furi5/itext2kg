@@ -80,8 +80,11 @@ class iEntitiesExtractor():
                 logging.info(f"INFO --- {entity['name'].lower()} add unique_id and label")
             else:
                 entity['properties'] = {}
+                
             entities_info_list.append(entity)
-        
+            
+        entities_info_list.append({'name':entities_info['abstract']['source'],'label':'abstract','properties':{'context':entities_info['abstract']['context']}})
+
         entities["entities"] = entities_info_list
         entities["entities"] = [entity for entity in entities["entities"]
                                 if entity["label"].lower() in [
@@ -89,6 +92,7 @@ class iEntitiesExtractor():
                                     'drug', 'chemical', 'metabolite', 
                                     'variant', 'cell line','region',
                                     'cell type','processes','pathway',
+                                    'abstract'
                                     ]]
         
         logging.info (entities)

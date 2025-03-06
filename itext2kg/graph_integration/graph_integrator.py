@@ -88,11 +88,11 @@ class GraphIntegrator:
         for node in knowledge_graph.entities:
             properties = []
             for prop, value in node.properties.model_dump().items():
-                if prop == "embeddings":
-                    value = GraphIntegrator.transform_embeddings_to_str_list(value)
-                properties.append(f'SET n.{prop.replace(" ", "_")} = "{value}"')
+                # if prop == "embeddings":
+                #     value = GraphIntegrator.transform_embeddings_to_str_list(value)
+                properties.append(f'SET n.{prop.replace(" ", "_")} = {value.tolist()}')
             
-            if len(node.properties_info) > 0:
+            if len(node.properties_info) > 0 and node.label != "abstract":
                 property_statements_info = [f'SET n.{key.replace(" ", "_")} = "{value}"' 
                 for key, value in node.properties_info.items()]
                 properties.extend(property_statements_info)
@@ -119,11 +119,14 @@ class GraphIntegrator:
             )
             
             property_statements = ' '.join(
-            [f'SET r.{key.replace(" ", "_")} = "{value}"' 
-             if key != "embeddings" 
-             else f'SET r.{key.replace(" ", "_")} = "{GraphIntegrator.transform_embeddings_to_str_list(value)}"' 
-             for key, value in rel.properties.model_dump().items()]
+                [
+                    f'SET r.{key.replace(" ", "_")} = "{value}"' 
+                    if key != "embeddings" 
+                    else f'SET r.{key.replace(" ", "_")} = {value.tolist()}' 
+                    for key, value in rel.properties.model_dump().items()
+                ]
             )
+
             
             property_statements = property_statements + " " + property_statements_info 
             
@@ -156,3 +159,11 @@ class GraphIntegrator:
 
         for relation in relationships:
             self.run_query(relation)
+            
+            
+def escape_cypher_string(s):
+    """Escapes special characters in a string for use in a Cypher query."""
+    s = s.replace("\\", "\\\\")  # Escape backslashes first!
+    s = s.replace("\"", "\\\"")  # Escape double quotes
+    s = s.replace("'", "\\'")    # Escape single quotes
+    return s

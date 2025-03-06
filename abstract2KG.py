@@ -18,15 +18,15 @@ embeddings = OllamaEmbeddings(
 )
 
 
-
 def main(PUTATOR_PATH, OUTPUT_PATH, PMID):
-
     #----------------load context----------------
     pubtator_file = f"{PUTATOR_PATH}{PMID}.txt"
     pubtator_process = PubtatorProcessor(pubtator_file, llm)
     semantic_blocks = pubtator_process.block
     properties_info = pubtator_process.properties_info
     pubtator_info = pubtator_process.pubtator_info
+    
+    pubtator_info['abstract'] = {'context':semantic_blocks[-1], 'source':properties_info['source']}
 
         
     # -----------------Build the graph-----------------
@@ -45,30 +45,19 @@ def main(PUTATOR_PATH, OUTPUT_PATH, PMID):
     
 
 if __name__ == "__main__":
-    # Alzheimer
-    # df = pd.read_csv("/home/jovyan/my_code/RAG/AD_pmid_results.csv")
-    # pmid_list = list(df['pmid'].astype(str))
-    # pmid_list = pmid_list[:10]
-    # #-------------PATH---------
-    # PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/AD_pubtabor/"
-    # JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/AD"
-    # OUTPUT_PATH = JSON_PATH
-    
-    # for PMID in pmid_list:
-    #     main(PUTATOR_PATH, JSON_PATH, OUTPUT_PATH, PMID)
-    # print("Done")
-    
     # Delirium
-    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Delirium_pmid_results.csv")
+    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Delirium_pmid_results_fa.txt", sep='\t')
     pmid_list = list(df1['pmid'].astype(str))
-    pmid_list = pmid_list[:10]  
-    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/Delirium_pubtator/"
-    JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/Deilirum"
+    pmid_list = pmid_list[:100]  
+    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/delirium/"
+    JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/Deilirium"
     
     OUTPUT_PATH = JSON_PATH
     for PMID in pmid_list:
         main(PUTATOR_PATH, OUTPUT_PATH, PMID)
     print("Done")
+    
+
     
     
     

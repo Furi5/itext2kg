@@ -77,18 +77,10 @@ class Relationship(BaseModel):
         return f"Relationship(name={self.name}, startEntity={self.startEntity}, endEntity={self.endEntity}, properties={self.properties}, properties_info={self.properties_info})"
     
 
-class Chunk(BaseModel):
-    context:str = ""
-    source_id:str = ""
-    def __repr__(self):
-        return f"Chunk(context={self.context}, source_id={self.source_id})"
-
-
 class KnowledgeGraph(BaseModel):
     entities:list[Entity]= []
     relationships:list[Relationship] = []
-    chunk:list[Chunk] = []
-    
+
     def embed_entities(self,
                        embeddings_function:Callable[[str], np.array],
                        entity_name_weight:float=0.6,

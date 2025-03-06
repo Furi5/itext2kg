@@ -98,11 +98,34 @@ class iRelationsExtractor:
         # -------- Verification of invented entities and matching to the closest ones from the input entities-------- #
         
         logging.info("[INFO] Verification of invented entities")
+        
+        
+        for entity in entities:
+            if entity.label == "abstract":
+                abstract_dis = {"startNode": {}, "endNode": {}, "name": "reported"}
+                abstract_dis["startNode"] = {"label": entity.label, "name": entity}
+                for disease in entities:
+                    if disease.label == "disease":
+                        abstract_dis["endNode"] = {"label": disease.label, "name": disease}
+                        relationships["relationships"].append(abstract_dis.copy())  
+                        abstract_dis["endNode"] = {}  
+
+        
         for relationship in relationships["relationships"]:
             if relationship.keys() != {"startNode", "endNode", "name"}:
                 continue
             elif relationship["startNode"].keys() != {"label", "name"} or relationship["endNode"].keys() != {"label", "name"}:
                 continue
+            elif relationship["startNode"]["label"]=='abstract' and isinstance(relationship["startNode"]["name"],Entity):
+                
+                logging.info("add abstract relationship")
+                logging.info(isinstance(relationship["startNode"]["name"],Entity))
+                logging.info(isinstance(relationship["endNode"]["name"],Entity))
+                startEntity = relationship["startNode"]["name"]
+                endEntity = relationship["endNode"]["name"]
+                curated_relationships.append(Relationship(startEntity= startEntity, 
+                    endEntity = endEntity,
+                    name = relationship["name"]))
             else:
                 startEntity = Entity(label=relationship["startNode"]["label"], name = relationship["startNode"]["name"])
                 endEntity = Entity(label=relationship["endNode"]["label"], name = relationship["endNode"]["name"])
