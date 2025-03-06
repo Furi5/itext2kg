@@ -37,11 +37,11 @@ class PubtatorProcessor:
 
         try:
             with open(self.pubtator_file, "r") as f: #self.variable
-                text_line = [self.clean_string(line.strip()) for line in f.readlines()] # Strip AND filter out empty lines
+                text_line = f.readlines() # Strip AND filter out empty lines
 
             PMID = text_line[0].split('|')[0]
             title = text_line[0].split('|')[-1]
-            abstract = text_line[1].split('|')[-1]
+            abstract = self.clean_string(text_line[1].split('|')[-1])
             context = f"Title: {title} Abstract: {abstract}."
 
             pubtator_info = {}
@@ -75,9 +75,18 @@ class PubtatorProcessor:
                             pubtator_distilled[label.lower()].append({label.lower(): name})
                             pubtator_info[name] = {"label": label.lower(), "unique_id": unique_ID}
                             seen_ids.add(name)
+                    
+                elif len(entity_line) == 5 and entity_line[4] != 'Species':
+                    label = entity_line[4]
+                    name = entity_line[3]
+                    if name not in seen_ids:
+                        seen_ids.add(name)
+                        if label.lower() not in pubtator_distilled:
+                            pubtator_distilled[label.lower()] = []
+                            pubtator_distilled[label.lower()].append({label.lower(): name})
+                            pubtator_info[name] = {"label": label.lower()}
                 else:
                     logging.warning(f"Skipping malformed entity line: {entity_line}")
-
             return context, PMID, pubtator_info, pubtator_distilled, species_info
 
         except FileNotFoundError:

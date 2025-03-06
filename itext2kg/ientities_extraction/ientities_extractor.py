@@ -75,7 +75,8 @@ class iEntitiesExtractor():
         entities_info = {key.lower(): value for key, value in entities_info.items()}
         for entity in raw_entities:
             if entity['name'].lower() in entities_info.keys():
-                entity['properties'] = {'unique_id':entities_info[entity['name'].lower()]['unique_id']}
+                if 'unique_id' in entities_info[entity['name'].lower()].keys():
+                    entity['properties'] = {'unique_id':entities_info[entity['name'].lower()]['unique_id']}
                 entity['label'] = entities_info[entity['name'].lower()]['label']
                 logging.info(f"INFO --- {entity['name'].lower()} add unique_id and label")
             else:

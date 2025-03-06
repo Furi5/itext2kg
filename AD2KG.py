@@ -2,8 +2,7 @@ import pandas as pd
 import logging
 import pickle
 import os
-from langchain_community.chat_models import ChatOllama  # Use langchain_community
-from langchain_ollama import OllamaEmbeddings    # Use langchain_community
+from langchain_ollama import ChatOllama, OllamaEmbeddings # Use langchain_community
 from itext2kg.utils import PubtatorProcessor
 from itext2kg import iText2KG
 import multiprocessing
@@ -17,15 +16,13 @@ def process_pmid(pmid, pubtator_path, output_path, llm_model_name, embeddings_mo
     """
     Processes a single PMID.  Now takes model names instead of instances.
     """
-    if os.exists(f'{output_path}/{pmid}.pkl'):
-        return
     try:
         # Initialize LLM and Embeddings *inside* the worker process
         llm = ChatOllama(model=llm_model_name, temperature=0)
         embeddings = OllamaEmbeddings(model=embeddings_model_name)
 
         # Load context
-        pubtator_file = f"{pubtator_path}{pmid}.txt"
+        pubtator_file = f"{pubtator_path}/{pmid}.txt"
         pubtator_process = PubtatorProcessor(pubtator_file, llm)
         semantic_blocks = pubtator_process.block
         properties_info = pubtator_process.properties_info
@@ -58,20 +55,20 @@ def main():
     # Define model names *here*
     llm_model_name = "deepseek-r1:32b"
     embeddings_model_name = "nomic-embed-text:latest"
-
-    # Delirium data paths
-    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Delirium_pmid_results_fa.txt", sep='\t')
-    pmid_list = list(df1['pmid'].astype(str))
-    pmid_list = pmid_list[:10000]
-    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/delirium/"
-    OUTPUT_PATH = "/home/jovyan/my_code/itext2kg/output_kg/Deilirium"
-
+    
+    DATA_PATH = "/home/mindrank/fuli/itext2kg/Data/AD_pubtabor"
+    OUTPUT_PATH = "/home/mindrank/fuli/itext2kg/output_kg/AD"
+    pmid_list =[file_name.split('.')[0] for file_name in os.listdir(DATA_PATH)]
+    
     # Create a partial function, passing model *names*
-    process_func = partial(process_pmid, pubtator_path=PUTATOR_PATH, output_path=OUTPUT_PATH,
-                           llm_model_name=llm_model_name, embeddings_model_name=embeddings_model_name)
+    process_func = partial(
+        process_pmid, pubtator_path=DATA_PATH, 
+        output_path=OUTPUT_PATH, llm_model_name=llm_model_name, 
+        embeddings_model_name=embeddings_model_name
+        )
 
     # Use imap_unordered with tqdm for progress display
-    with multiprocessing.Pool(5) as pool:
+    with multiprocessing.Pool(50) as pool:
         for _ in tqdm(pool.imap_unordered(process_func, pmid_list), total=len(pmid_list), desc="Processing PMIDs"):
             pass  # Result is not used, only iteration for progress bar
 

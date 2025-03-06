@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+import os
 import pickle
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from itext2kg.utils import PubtatorProcessor
@@ -20,7 +21,7 @@ embeddings = OllamaEmbeddings(
 
 def main(PUTATOR_PATH, OUTPUT_PATH, PMID):
     #----------------load context----------------
-    pubtator_file = f"{PUTATOR_PATH}{PMID}.txt"
+    pubtator_file = f"{PUTATOR_PATH}/{PMID}.txt"
     pubtator_process = PubtatorProcessor(pubtator_file, llm)
     semantic_blocks = pubtator_process.block
     properties_info = pubtator_process.properties_info
@@ -46,15 +47,13 @@ def main(PUTATOR_PATH, OUTPUT_PATH, PMID):
 
 if __name__ == "__main__":
     # Delirium
-    df1 = pd.read_csv("/home/jovyan/my_code/RAG/Delirium_pmid_results_fa.txt", sep='\t')
-    pmid_list = list(df1['pmid'].astype(str))
-    pmid_list = pmid_list[:100]  
-    PUTATOR_PATH = "/home/jovyan/my_code/RAG/Data_v2/delirium/"
-    JSON_PATH = "/home/jovyan/my_code/itext2kg/output_kg/Deilirium"
+    DATA_PATH = "/home/mindrank/fuli/itext2kg/Data/delirium"
+    OUTPUT_PATH = "/home/mindrank/fuli/itext2kg/output_kg/delirium"
     
-    OUTPUT_PATH = JSON_PATH
-    for PMID in pmid_list:
-        main(PUTATOR_PATH, OUTPUT_PATH, PMID)
+    for file_name in os.listdir(DATA_PATH):
+        PMID  = file_name.split('.')[0]
+        main(DATA_PATH, OUTPUT_PATH, PMID)
+        break
     print("Done")
     
 

@@ -204,7 +204,7 @@ class Matcher:
                                 ]:
             
                 unique_id = entity.properties_info.get('unique_id')
-                if unique_id:
+                if unique_id and unique_id != '-':
                     if unique_id not in grouped_entities:
                         grouped_entities[unique_id] = []
                     grouped_entities[unique_id].append(entity) #The grouped entities now has the actual object in it, not just names!

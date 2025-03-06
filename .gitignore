@@ -2,3 +2,7 @@
 output_kg/
 build/
 itext2kg.egg-info/
+Data/
+Data_v2.tar.gz
+*.log
+*.pyc
