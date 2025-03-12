@@ -86,7 +86,8 @@ class PubtatorProcessor:
                             pubtator_distilled[label.lower()].append({label.lower(): name})
                             pubtator_info[name] = {"label": label.lower()}
                 else:
-                    logging.warning(f"Skipping malformed entity line: {entity_line}")
+                    # logging.warning(f"Skipping malformed entity line: {entity_line}")
+                    pass
             return context, PMID, pubtator_info, pubtator_distilled, species_info
 
         except FileNotFoundError:
@@ -114,7 +115,7 @@ class PubtatorProcessor:
                     - The output should only include the entities, excluding any non-entity content such as descriptive text or inferences.
                     """
                 distilled = document_distiller.distill(documents=[self.context], IE_query=IE_query, output_data_structure=DiseaseArticle)  # self.context not global
-                logging.info("Abstract distilled successfully.") #Log when its success
+                # logging.info("Abstract distilled successfully.") #Log when its success
                 return self._add_missing_entities(self._match_distilled_to_context(distilled))  # Call with self.
 
             except Exception as e:
@@ -145,6 +146,10 @@ class PubtatorProcessor:
     def _match_distilled_to_context(self, distilled):
         """Matches distilled information to the context."""
         distilled_ = {}
+        if distilled is None or distilled == {}:
+            logging.info(f'distilled: {distilled}')
+            return distilled_
+        
         for key, value in distilled.items():
             if value and value != []:
                 if isinstance(value, list):
@@ -165,7 +170,7 @@ class PubtatorProcessor:
             if entity_type not in abstract_distilled and entities != []:
                 abstract_distilled[entity_type] = entities
                 # miss_entities.append({entity_type: entities})
-                logging.info(f'Adding {entities} to the abstract')
+                # logging.info(f'Adding {entities} to the abstract')
             elif isinstance(entities, list):
                 existing_names = set() #create all the strings with frozensets
 
@@ -180,7 +185,7 @@ class PubtatorProcessor:
                     if entity_name and entity_name not in existing_names and len(entity_name)>0:
                         abstract_distilled[entity_type].append(entity) #Finally add the entity if the name doesn't match.
                         # miss_entities.append({entity_type: entity})
-                        logging.info(f'Adding {entity_name} to the abstract')
+                        # logging.info(f'Adding {entity_name} to the abstract')
 
         return abstract_distilled #And return the new distilled version
 

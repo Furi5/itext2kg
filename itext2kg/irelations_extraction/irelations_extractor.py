@@ -52,7 +52,7 @@ class iRelationsExtractor:
         # we would not give the LLM complex data structure as context to avoid the hallucination as much as possible
         
         entities_simplified = [(entity.name, entity.label) for entity in entities]
-        formatted_context = f"context : --\n'{context}' \n entities :-- \n {entities_simplified}"
+        formatted_context = f"entities:--'{entities_simplified}'\n context: '{context}'"
         IE_query = '''# Directives
                         - Extract relationships between the provided entities based on the context.
                         - identify all pairs of (startNode, EndNode) that are *clearly related* to each other.
@@ -65,7 +65,7 @@ class iRelationsExtractor:
                         
         if isolated_entities_without_relations:
             isolated_entities_without_relations_simplified = [(entity.name, entity.label) for entity in isolated_entities_without_relations]
-            formatted_context = f"context :--\n'{context}'"
+            formatted_context = f"context :'{context}'"
             IE_query = f'''
                     # Directives
                     - Based on the provided context, link the entities: \n {isolated_entities_without_relations_simplified} \n to the following entities: \n {entities_simplified}.
@@ -112,15 +112,13 @@ class iRelationsExtractor:
 
         
         for relationship in relationships["relationships"]:
-            if relationship.keys() != {"startNode", "endNode", "name"}:
+            if self.process_relationship(relationship) == False:
                 continue
-            elif relationship["startNode"].keys() != {"label", "name"} or relationship["endNode"].keys() != {"label", "name"}:
-                continue
+
             elif relationship["startNode"]["label"]=='abstract' and isinstance(relationship["startNode"]["name"],Entity):
-                
-                logging.info("add abstract relationship")
-                logging.info(isinstance(relationship["startNode"]["name"],Entity))
-                logging.info(isinstance(relationship["endNode"]["name"],Entity))
+                # logging.info("add abstract relationship")
+                # logging.info(isinstance(relationship["startNode"]["name"],Entity))
+                # logging.info(isinstance(relationship["endNode"]["name"],Entity))
                 startEntity = relationship["startNode"]["name"]
                 endEntity = relationship["endNode"]["name"]
                 curated_relationships.append(Relationship(startEntity= startEntity, 
@@ -142,7 +140,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif startEntity_in_input_entities is None and endEntity_in_input_entities is None:
-                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
+                    # logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} and {endEntity} are invented. Solving them ...")
                     startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings, 
                                             entity_label_weight=entity_label_weight, 
                                             entity_name_weight=entity_name_weight)
@@ -158,7 +156,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif startEntity_in_input_entities is None:
-                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
+                    # logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {startEntity} is invented. Solving it ...")
                     startEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
                                             entity_label_weight=entity_label_weight,
                                             entity_name_weight=entity_name_weight)
@@ -169,7 +167,7 @@ class iRelationsExtractor:
                                         name = relationship["name"]))
                     
                 elif endEntity_in_input_entities is None:
-                    logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
+                    # logging.info(f"[INFO][INVENTED ENTITIES] Aie; the entities {endEntity} is invented. Solving it ...")
                     endEntity.embed_Entity(embeddings_function=self.langchain_output_parser.calculate_embeddings,
                                         entity_label_weight=entity_label_weight,
                                         entity_name_weight=entity_name_weight)
@@ -242,3 +240,18 @@ class iRelationsExtractor:
             curated_relationships[i].properties_info = source
             
         return curated_relationships
+    
+    def process_relationship(self, relationship):
+        if not isinstance(relationship, dict):
+            return False
+        expected_relationship_keys = {"startNode", "endNode", "name"}
+        if set(relationship.keys()) != expected_relationship_keys:
+            return False
+        if not isinstance(relationship["startNode"], dict) or not isinstance(relationship["endNode"], dict):
+            return False
+        
+        expected_node_keys = {"label", "name"}
+        if set(relationship["startNode"].keys()) != expected_node_keys or \
+           set(relationship["endNode"].keys()) != expected_node_keys:
+            return False
+        return True

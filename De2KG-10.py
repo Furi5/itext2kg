@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 import pickle
 import os
@@ -12,19 +13,18 @@ from tqdm import tqdm
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+llm_model_name = "deepseek-r1:32b"
+embeddings_model_name = "nomic-embed-text:latest"
+llm = ChatOllama(model=llm_model_name, temperature=0, base_url="http://127.0.0.1:11443")
+embeddings = OllamaEmbeddings(model=embeddings_model_name, base_url="http://127.0.0.1:11443")
+itext2kg = iText2KG(llm_model=llm, embeddings_model=embeddings)
+
 def process_pmid(pmid, pubtator_path, output_path, llm_model_name, embeddings_model_name):
     """
     Processes a single PMID.  Now takes model names instead of instances.
     """
     try:
         # Initialize LLM and Embeddings *inside* the worker process
-        llm = ChatOllama(model=llm_model_name, temperature=0,  
-                        #  base_url="http://127.0.0.1:11441"
-                         )
-        embeddings = OllamaEmbeddings(model=embeddings_model_name,  
-                                    #   base_url="http://127.0.0.1:11441"
-                                      )
-
         # Load context
         pubtator_file = f"{pubtator_path}/{pmid}.txt"
         pubtator_process = PubtatorProcessor(pubtator_file, llm)
@@ -35,7 +35,7 @@ def process_pmid(pmid, pubtator_path, output_path, llm_model_name, embeddings_mo
         pubtator_info['abstract'] = {'context': semantic_blocks[-1], 'source': properties_info['source']}
 
         # Build the graph
-        itext2kg = iText2KG(llm_model=llm, embeddings_model=embeddings)
+        
         kg1 = itext2kg.build_graph(
             sections=[semantic_blocks],
             source=properties_info,
@@ -50,20 +50,24 @@ def process_pmid(pmid, pubtator_path, output_path, llm_model_name, embeddings_mo
 
     except FileNotFoundError:
         logging.error(f"PubTator file not found for PMID: {pmid}")
-    except Exception as e:
-        logging.error(f"Error processing PMID {pmid}: {e}")
-
-
 
 def main():
     # Define model names *here*
     llm_model_name = "deepseek-r1:32b"
     embeddings_model_name = "nomic-embed-text:latest"
     
-    DATA_PATH = "/home/mindrank/fuli/itext2kg/Data/AD_pubtabor"
-    OUTPUT_PATH = "/home/mindrank/fuli/itext2kg/output_kg/AD"
-    pmid_list =[file_name.split('.')[0] for file_name in os.listdir(DATA_PATH)]
-    pmid_list = pmid_list[9000:10000]
+    DATA_PATH = "/home/mindrank/fuli/itext2kg/Data/delirium"
+    OUTPUT_PATH = "/home/mindrank/fuli/itext2kg/output_kg/delirium"
+    pmid_list =[]
+    for file_name in os.listdir(DATA_PATH):
+        pmid = file_name.split('.')[0]
+        if os.path.exists(f"{OUTPUT_PATH}/{pmid}.pkl"):
+            pass
+        else:
+            pmid_list.append(pmid)
+        
+    pmid_list_chunk = np.array_split(pmid_list, 10)
+    pmid_list = pmid_list_chunk[9]
     # Create a partial function, passing model *names*
     process_func = partial(
         process_pmid, pubtator_path=DATA_PATH, 

@@ -18,12 +18,8 @@ def process_pmid(pmid, pubtator_path, output_path, llm_model_name, embeddings_mo
     """
     try:
         # Initialize LLM and Embeddings *inside* the worker process
-        llm = ChatOllama(model=llm_model_name, temperature=0,  
-                        #  base_url="http://127.0.0.1:11441"
-                         )
-        embeddings = OllamaEmbeddings(model=embeddings_model_name,  
-                                    #   base_url="http://127.0.0.1:11441"
-                                      )
+        llm = ChatOllama(model=llm_model_name, temperature=0)
+        embeddings = OllamaEmbeddings(model=embeddings_model_name)
 
         # Load context
         pubtator_file = f"{pubtator_path}/{pmid}.txt"
@@ -63,7 +59,7 @@ def main():
     DATA_PATH = "/home/mindrank/fuli/itext2kg/Data/AD_pubtabor"
     OUTPUT_PATH = "/home/mindrank/fuli/itext2kg/output_kg/AD"
     pmid_list =[file_name.split('.')[0] for file_name in os.listdir(DATA_PATH)]
-    pmid_list = pmid_list[9000:10000]
+    
     # Create a partial function, passing model *names*
     process_func = partial(
         process_pmid, pubtator_path=DATA_PATH, 

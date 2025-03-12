@@ -78,7 +78,7 @@ class iEntitiesExtractor():
                 if 'unique_id' in entities_info[entity['name'].lower()].keys():
                     entity['properties'] = {'unique_id':entities_info[entity['name'].lower()]['unique_id']}
                 entity['label'] = entities_info[entity['name'].lower()]['label']
-                logging.info(f"INFO --- {entity['name'].lower()} add unique_id and label")
+                # logging.info(f"INFO --- {entity['name'].lower()} add unique_id and label")
             else:
                 entity['properties'] = {}
                 
@@ -96,7 +96,7 @@ class iEntitiesExtractor():
                                     'abstract'
                                     ]]
         
-        logging.info (entities)
+        # logging.info (entities)
         entities = [Entity(label=entity["label"], name = entity["name"], properties_info=entity['properties']) 
                     for entity in entities["entities"]]
         # logging.info (entities)
